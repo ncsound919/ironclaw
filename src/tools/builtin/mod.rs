@@ -8,6 +8,7 @@ mod job;
 mod json;
 mod memory;
 pub mod routine;
+mod science;
 pub(crate) mod shell;
 pub mod skill_tools;
 mod time;
@@ -26,6 +27,9 @@ pub use json::JsonTool;
 pub use memory::{MemoryReadTool, MemorySearchTool, MemoryTreeTool, MemoryWriteTool};
 pub use routine::{
     RoutineCreateTool, RoutineDeleteTool, RoutineHistoryTool, RoutineListTool, RoutineUpdateTool,
+};
+pub use science::{
+    ExperimentTrackerTool, ScienceComputeTool, ScienceReportTool, ScienceSearchTool,
 };
 pub use shell::ShellTool;
 pub use skill_tools::{SkillInstallTool, SkillListTool, SkillRemoveTool, SkillSearchTool};
