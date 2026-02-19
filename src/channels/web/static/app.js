@@ -2302,22 +2302,29 @@ function getDefaultContent(lang) {
 document.getElementById('code-language').addEventListener('change', function () {
   if (!monacoEditor) {
     window.alert('The code editor is still loading. Please try again in a moment.');
+document.addEventListener('DOMContentLoaded', function () {
+  const codeLanguageSelect = document.getElementById('code-language');
+  if (!codeLanguageSelect) {
     return;
   }
 
-  const lang = this.value;
-  const label = this.options[this.selectedIndex].text;
-  document.getElementById('code-lang-label').textContent = label;
+  codeLanguageSelect.addEventListener('change', function () {
+    const lang = this.value;
+    const label = this.options[this.selectedIndex].text;
+    document.getElementById('code-lang-label').textContent = label;
 
-  const model = monacoEditor.getModel();
-  if (model) {
-    monaco.editor.setModelLanguage(model, lang);
-    // Only set default content if editor is empty or still has default content
-    const current = monacoEditor.getValue();
-    if (!current.trim()) {
-      monacoEditor.setValue(getDefaultContent(lang));
+    if (monacoEditor) {
+      const model = monacoEditor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, lang);
+        // Only set default content if editor is empty or still has default content
+        const current = monacoEditor.getValue();
+        if (!current.trim()) {
+          monacoEditor.setValue(getDefaultContent(lang));
+        }
+      }
     }
-  }
+  });
 });
 
 function toggleCodeSettings() {
