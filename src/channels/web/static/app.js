@@ -2367,6 +2367,9 @@ function copyEditorContent() {
   const content = monacoEditor.getValue();
   navigator.clipboard.writeText(content).then(function () {
     showToast('Copied to clipboard', 'info');
+  }).catch(function (err) {
+    console.error('Failed to copy to clipboard:', err);
+    showToast('Failed to copy to clipboard. Please check your browser permissions or HTTPS settings.', 'error');
   });
 }
 
