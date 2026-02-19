@@ -2318,7 +2318,6 @@ function toggleCodeSettings() {
 function applyCodeSetting() {
   if (!monacoEditor) return;
   monacoEditor.updateOptions({
-    theme: undefined, // theme is set separately
     fontSize: parseInt(document.getElementById('code-font-size').value) || 14,
     minimap: { enabled: document.getElementById('code-minimap').checked },
     wordWrap: document.getElementById('code-wordwrap').checked ? 'on' : 'off',
