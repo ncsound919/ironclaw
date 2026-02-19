@@ -2159,7 +2159,14 @@ const customLanguages = {
 
 function initMonaco() {
   if (monacoReady) return;
-  if (typeof require === 'undefined' || !require.config) return;
+  if (typeof require === 'undefined' || !require.config) {
+    monacoReady = false;
+    console.error('Monaco editor could not be initialized: AMD loader "require" is unavailable. The Code tab may not function correctly.');
+    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+      window.alert('The code editor failed to load (for example, due to a network error or an ad blocker). The Code tab may not function correctly.');
+    }
+    return;
+  }
 
   require.config({
     paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' },
