@@ -1,0 +1,142 @@
+**Here’s a deep-dive spec for capabilities 1–5** — exactly what you need to turn Ironclaw into a production-grade “virtual scientist” inside your IDE.  
+
+Each section includes:  
+- Core value  
+- Key features  
+- Example IDE commands / natural-language prompts  
+- Suggested module structure (language-agnostic, easy to implement in Python/TypeScript/Rust/etc.)  
+- Integration hooks  
+
+### 1. Hypothesis & Experiment Designer
+**Core value**: Turns vague ideas or raw data into ready-to-run, statistically sound experiments in <60 seconds.
+
+**Key features**  
+- Ingests: pasted data, lab notes, CSV/JSON, literature excerpts, or even voice notes  
+- Outputs: ranked list of testable hypotheses + full experimental design (variables, controls, sample size via power analysis, randomization scheme)  
+- Runs cheap Monte-Carlo or surrogate “pilot” simulations to estimate effect size, power, and cost before you commit GPU/lab time  
+
+**Example IDE interactions**  
+- `Ironclaw, from this dataset [paste CSV] and my notes about histotripsy cavitation, generate 5 hypotheses with power ≥0.8`  
+- `Design a 96-well plate screen for compound X with temperature 37–42 °C, 3 replicates, positive/negative controls`  
+- `Pilot this design in-silico and tell me expected Cohen’s d`
+
+**Module structure**  
+- `hypothesis_generator.py` (LLM + domain-specific prompt templates)  
+- `design_builder.py` (uses DOE libraries: pyDOE2, statsmodels, or custom Latin-hypercube)  
+- `pilot_runner.py` (lightweight surrogate models or 10–100 quick sims)  
+- `experiment_schema.py` (Pydantic/Dataclass model for standardized output)
+
+**Integration hooks**  
+- Right-click on any file/notebook cell → “Ironclaw → Generate Hypotheses”  
+- Output appears as collapsible Markdown + JSON export + “Run this design” button that feeds straight into your simulation queue
+
+### 2. Closed-Loop Autonomous Optimizer
+**Core value**: Replaces brute-force grid search with smart, information-efficient optimization that runs 24/7 and actually converges.
+
+**Key features**  
+- Bayesian optimization (BoTorch/Optuna/nevergrad) or active learning loops  
+- Multi-objective support (e.g., maximize efficacy while minimizing energy or toxicity)  
+- Automatic campaign management: checkpoint every N steps, resume after crash, early stopping  
+- Visual live dashboard of acquisition function, convergence, and uncertainty
+
+**Example IDE interactions**  
+- `Ironclaw, optimize histotripsy pulse frequency 100–500 Hz and pressure 1–5 MPa for max lesion volume / min off-target damage, 200 iterations max`  
+- `Start campaign “TissueModel_v3” with current best params as seed`  
+- `Pause optimizer and show current Pareto front`
+
+**Module structure**  
+- `optimizer_core.py` (wrapper around BoTorch/Optuna with Ironclaw-specific acquisition functions)  
+- `campaign_manager.py` (SQLite/Postgres backend for experiment history, checkpoints, metadata)  
+- `acquisition_logger.py` (real-time websocket updates to IDE dashboard)  
+- `convergence_checker.py` (multiple stopping criteria)
+
+**Integration hooks**  
+- Lives in a persistent “Campaigns” sidebar panel  
+- One-click “Deploy to Cloud” that spins up parallel workers on your cluster
+
+### 3. Always-On Literature & Preprint Monitor
+**Core value**: You never miss a relevant paper again; every new result is instantly turned into executable simulations.
+
+**Key features**  
+- Background worker that polls arXiv, bioRxiv, medRxiv, PubMed, Semantic Scholar (via APIs or RSS) every 6–12 h  
+- Keyword + embedding-based relevance filter (your personal “research fingerprint”)  
+- One-click “Replicate this paper” → parses methods → extracts parameters → generates simulation script  
+- Daily/weekly digest + contradiction detector vs your own results
+
+**Example IDE interactions**  
+- `Ironclaw, watch histotripsy + cavitation + tissue models`  
+- `Summarize new papers since yesterday and suggest replication sims`  
+- `Paper [paste DOI or PDF] → extract protocol and run in my current tissue model`
+
+**Module structure**  
+- `literature_watcher.py` (async scheduler + feed parsers)  
+- `paper_ingestor.py` (PDF → LLM → structured JSON with parameters, equations, figures)  
+- `replication_generator.py` (maps paper params to your simulation backends)  
+- `contradiction_engine.py` (compares your stored results with extracted claims)
+
+**Integration hooks**  
+- Dedicated “Literature” tab in IDE with paper cards, relevance score, and “Run replication” button  
+- Notifications inside IDE or via system tray
+
+### 4. Scientific Data Engineer
+**Core value**: Every dataset and experiment result is instantly clean, versioned, and reproducible — no more “where did this CSV come from?” moments.
+
+**Key features**  
+- Auto-detect and fix units, column naming, missing values, outliers, batch effects  
+- Full provenance graph: every result links back to exact code, git commit, random seed, environment (conda/pip freeze), hardware  
+- Anomaly detection that triggers diagnostic simulations  
+- One-click “Export reproducibility package” (ZIP with data + code + report + Docker/conda env)
+
+**Example IDE interactions**  
+- Drag-and-drop any CSV/JSON/HDF5 → “Ironclaw, standardize and register this dataset”  
+- `Show provenance for result_2025-02-18.h5`  
+- `Detect batch effects in campaign “TissueModel_v3” and suggest calibration runs`
+
+**Module structure**  
+- `data_standardizer.py` (Great Tables + Pint for units + Pandas profiling)  
+- `experiment_registry.py` (SQLite + optional DVC/Git-LFS backend)  
+- `provenance_tracker.py` (decorator that wraps every Ironclaw run)  
+- `anomaly_detector.py` (isolation forest + statistical rules)
+
+**Integration hooks**  
+- File explorer context menu: “Register with Ironclaw”  
+- Every simulation output automatically gets a registry entry and badge in the IDE
+
+### 5. Multi-Domain In-Silico Lab
+**Core value**: One unified interface to every simulation engine you own — you describe the science, Ironclaw picks and orchestrates the right tools.
+
+**Key features**  
+- Plugin system for domains:  
+  - Bio/Chem: RDKit, AutoDock, Primer3, Biopython  
+  - Medical physics: k-Wave, Field II, histotripsy-specific wave solvers  
+  - Agent-based: Mesa, NetLogo (via API), custom ODE/PDE solvers  
+- Natural language → backend router (LLM decides which engines + how to chain them)  
+- Unified result format + automatic visualization
+
+**Example IDE interactions**  
+- `Ironclaw, model the acoustic field of a 1.5 MHz histotripsy transducer in liver tissue using k-Wave, then predict lesion size`  
+- `Run virtual screening of 500 compounds against protein X using docking + MD short run`  
+- `Build agent-based model of tumor growth with immune cells`
+
+**Module structure**  
+- `lab_router.py` (LLM classifier + registry of available backends)  
+- `plugin_manager.py` (dynamic import of domain plugins)  
+- `simulation_orchestrator.py` (handles multi-step pipelines, data handoff between tools)  
+- `unified_visualizer.py` (Plotly/Bokeh dashboards)
+
+**Integration hooks**  
+- “New Simulation” wizard in IDE sidebar  
+- Plugin marketplace tab so you can drop in new engines later
+
+---
+
+**Ready-to-implement next steps**  
+1. Start with 1 + 4 (they’re the fastest wins and feed everything else).  
+2. Build the shared `experiment_registry` and `provenance_tracker` first — they become the backbone.  
+3. Use a simple plugin architecture (even just a Python folder with __init__.py) so you can add domains incrementally.
+
+Tell me:  
+- What language/stack is Ironclaw built in right now? (Python, TS, Rust, etc.)  
+- Which of 1–5 do you want full code skeletons or API definitions for first?  
+
+I’ll give you copy-paste-ready module outlines + FastAPI/Flask or VSCode extension hooks tailored to your exact setup. Let’s ship this.
