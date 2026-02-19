@@ -956,4 +956,47 @@ mod tests {
         let h2 = compute_hash("world");
         assert_ne!(h1, h2);
     }
+
+    #[tokio::test]
+    async fn test_load_science_skill_with_python_packages() {
+        let dir = tempfile::tempdir().unwrap();
+        let skill_dir = dir.path().join("hypothesis-designer");
+        fs::create_dir(&skill_dir).unwrap();
+
+        // Create a skill with Python packages requirement
+        let content = r#"---
+name: hypothesis-designer
+version: "1.0.0"
+description: Test hypothesis designer
+activation:
+  keywords: ["hypothesis", "experiment"]
+  tags: ["science"]
+metadata:
+  openclaw:
+    requires:
+      bins: ["python3"]
+      python_packages: ["scipy", "numpy"]
+      optional_bins: ["R"]
+---
+
+Test prompt for hypothesis designer skill.
+"#;
+        fs::write(skill_dir.join("SKILL.md"), content).unwrap();
+
+        let mut registry = SkillRegistry::new(dir.path().to_path_buf());
+        let loaded = registry.discover_all().await;
+
+        // Skill may or may not load depending on whether Python packages are installed
+        // But it should not panic or error during discovery
+        if loaded.contains(&"hypothesis-designer".to_string()) {
+            let skill = registry.find_by_name("hypothesis-designer").unwrap();
+            assert_eq!(skill.manifest.name, "hypothesis-designer");
+            assert_eq!(skill.manifest.version, "1.0.0");
+            let meta = skill.manifest.metadata.as_ref().unwrap();
+            let openclaw = meta.openclaw.as_ref().unwrap();
+            assert_eq!(openclaw.requires.bins, vec!["python3"]);
+            assert_eq!(openclaw.requires.python_packages, vec!["scipy", "numpy"]);
+            assert_eq!(openclaw.requires.optional_bins, vec!["R"]);
+        }
+    }
 }

@@ -180,7 +180,7 @@ This document tracks feature parity between IronClaw (Rust implementation) and O
 | Post-compaction read audit | ✅ | ❌ | Layer 3: workspace rules appended to summaries |
 | Post-compaction context injection | ✅ | ❌ | Workspace context as system event |
 | Custom system prompts | ✅ | ✅ | Template variables, safety guardrails |
-| Skills (modular capabilities) | ✅ | ✅ | Prompt-based skills with trust gating, attenuation, activation criteria, catalog, selector |
+| Skills (modular capabilities) | ✅ | ✅ | Prompt-based skills with trust gating, attenuation, activation criteria, catalog, selector. OpenClaw metadata with gating (bins, env, config, python_packages, optional requirements) |
 | Skill routing blocks | ✅ | 🚧 | ActivationCriteria (keywords, patterns, tags) but no "Use when / Don't use when" blocks |
 | Skill path compaction | ✅ | ❌ | ~ prefix to reduce prompt tokens |
 | Thinking modes (low/med/high) | ✅ | ❌ | Configurable reasoning depth |
@@ -517,6 +517,8 @@ This document tracks feature parity between IronClaw (Rust implementation) and O
 - ✅ CLI subcommands (onboard, config, status, memory)
 - ✅ Gateway token auth
 - ✅ Skills system (prompt-based with trust gating, attenuation, activation criteria)
+  - ✅ OpenClaw metadata with extended gating (bins, env, config, python_packages, optional requirements)
+  - ✅ 5 bundled science skills (hypothesis-designer, autonomous-optimizer, literature-monitor, data-engineer, insilico-lab)
 - ✅ Session file permissions (0o600)
 - ✅ Memory CLI commands (search, read, write, tree, status)
 - ✅ Shell env scrubbing + command injection detection
