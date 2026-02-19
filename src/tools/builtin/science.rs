@@ -661,6 +661,7 @@ impl ExperimentTrackerTool {
         params: &serde_json::Value,
     ) -> Result<serde_json::Value, ToolError> {
         let experiment_id = require_str(params, "experiment_id")?;
+        validate_path_id(experiment_id, "experiment_id")?;
         let observation = require_str(params, "observation")?;
         let data = params.get("data");
 
@@ -698,6 +699,7 @@ impl ExperimentTrackerTool {
         params: &serde_json::Value,
     ) -> Result<serde_json::Value, ToolError> {
         let experiment_id = require_str(params, "experiment_id")?;
+        validate_path_id(experiment_id, "experiment_id")?;
         let status = require_str(params, "status")?;
         let conclusion = params.get("conclusion").and_then(|v| v.as_str());
 
@@ -745,6 +747,7 @@ impl ExperimentTrackerTool {
         params: &serde_json::Value,
     ) -> Result<serde_json::Value, ToolError> {
         let experiment_id = require_str(params, "experiment_id")?;
+        validate_path_id(experiment_id, "experiment_id")?;
         let path = format!("experiments/{}.md", experiment_id);
 
         let doc = self.workspace.read(&path).await.map_err(|e| {
@@ -1022,6 +1025,7 @@ impl ScienceReportTool {
 
     async fn get_report(&self, params: &serde_json::Value) -> Result<serde_json::Value, ToolError> {
         let report_id = require_str(params, "report_id")?;
+        validate_path_id(report_id, "report_id")?;
         let path = format!("reports/{}.md", report_id);
 
         let doc = self.workspace.read(&path).await.map_err(|e| {
@@ -1064,6 +1068,7 @@ impl ScienceReportTool {
         params: &serde_json::Value,
     ) -> Result<serde_json::Value, ToolError> {
         let report_id = require_str(params, "report_id")?;
+        validate_path_id(report_id, "report_id")?;
         let section_name = require_str(params, "section_name")?;
         let content = require_str(params, "content")?;
 
@@ -1160,6 +1165,37 @@ fn truncate_str(s: &str, max_len: usize) -> String {
             .unwrap_or(0);
         format!("{}...", &s[..boundary])
     }
+}
+
+/// Validate that an ID is safe for use in workspace paths.
+///
+/// Rejects path traversal attempts (e.g., `../`, `/`, `\`) and IDs that
+/// are empty, too long, or contain unsafe characters.
+fn validate_path_id(id: &str, label: &str) -> Result<(), ToolError> {
+    if id.is_empty() {
+        return Err(ToolError::InvalidParameters(format!(
+            "{} cannot be empty",
+            label
+        )));
+    }
+    if id.len() > 128 {
+        return Err(ToolError::InvalidParameters(format!(
+            "{} too long (max 128 characters)",
+            label
+        )));
+    }
+    if id.contains('/')
+        || id.contains('\\')
+        || id.contains("..")
+        || id.contains('\0')
+        || id.starts_with('.')
+    {
+        return Err(ToolError::InvalidParameters(format!(
+            "{} contains unsafe characters (no /, \\, .., or leading .)",
+            label
+        )));
+    }
+    Ok(())
 }
 
 /// Compute descriptive statistics.
@@ -1883,5 +1919,24 @@ mod tests {
     fn test_convert_incompatible_units() {
         let result = convert_units(1.0, "kg", "c");
         assert!(result.is_err());
+    }
+
+    // -- Path validation tests --
+
+    #[test]
+    fn test_validate_path_id_rejects_traversal() {
+        assert!(validate_path_id("../../../etc/passwd", "id").is_err());
+        assert!(validate_path_id("foo/../bar", "id").is_err());
+        assert!(validate_path_id("foo/bar", "id").is_err());
+        assert!(validate_path_id("foo\\bar", "id").is_err());
+        assert!(validate_path_id(".hidden", "id").is_err());
+        assert!(validate_path_id("", "id").is_err());
+    }
+
+    #[test]
+    fn test_validate_path_id_accepts_valid() {
+        assert!(validate_path_id("exp-20240115-abcd1234", "id").is_ok());
+        assert!(validate_path_id("rpt-20240115-efgh5678", "id").is_ok());
+        assert!(validate_path_id("my-experiment", "id").is_ok());
     }
 }
