@@ -677,13 +677,42 @@ impl ExperimentTrackerTool {
 
         let path = format!("experiments/{}.md", experiment_id);
 
-        // Read existing content to verify experiment exists
-        self.workspace.read(&path).await.map_err(|e| {
+        // Read existing content to verify experiment exists and update Observations section
+        let existing = self.workspace.read(&path).await.map_err(|e| {
             ToolError::InvalidParameters(format!("Experiment '{}' not found: {}", experiment_id, e))
         })?;
 
+        // Try to insert the observation into the "## Observations" section.
+        // 1. Prefer replacing a known placeholder line if present.
+        // 2. Otherwise, insert immediately after the "## Observations" header.
+        // 3. If the header cannot be found, fall back to appending at the end.
+        let placeholder = "- _No observations logged yet._";
+        let mut updated = if existing.contains(placeholder) {
+            // Replace the placeholder with the new entry (trim leading newline).
+            let trimmed_entry = entry.trim_start_matches('\n');
+            existing.replacen(placeholder, trimmed_entry, 1)
+        } else if let Some(header_idx) = existing.find("## Observations") {
+            // Find end of the header line and insert entry after it.
+            let after_header_idx = existing[header_idx..]
+                .find('\n')
+                .map(|offset| header_idx + offset + 1)
+                .unwrap_or(existing.len());
+            let mut s = String::with_capacity(existing.len() + entry.len() + 1);
+            s.push_str(&existing[..after_header_idx]);
+            s.push_str(&entry);
+            if after_header_idx < existing.len() {
+                s.push_str(&existing[after_header_idx..]);
+            }
+            s
+        } else {
+            // Fallback: preserve previous behavior of appending to the end.
+            let mut s = existing;
+            s.push_str(&entry);
+            s
+        };
+
         self.workspace
-            .append(&path, &entry)
+            .write(&path, &updated)
             .await
             .map_err(|e| ToolError::ExecutionFailed(format!("Failed to log observation: {}", e)))?;
 
