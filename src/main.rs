@@ -726,7 +726,8 @@ async fn main() -> anyhow::Result<()> {
             workspace = workspace.with_embeddings(emb.clone());
         }
         let workspace = Arc::new(workspace);
-        tools.register_memory_tools(workspace);
+        tools.register_memory_tools(Arc::clone(&workspace));
+        tools.register_science_tools(workspace);
     }
 
     // Register builder tool if enabled.

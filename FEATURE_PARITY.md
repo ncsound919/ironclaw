@@ -522,6 +522,7 @@ This document tracks feature parity between IronClaw (Rust implementation) and O
 - ✅ Shell env scrubbing + command injection detection
 - ✅ Tinfoil private inference provider
 - ✅ OpenAI-compatible / OpenRouter provider support
+- ✅ Science tools (literature search, computation, experiment tracking, report generation)
 
 ### P1 - High Priority
 - ❌ Slack channel (real implementation)
@@ -582,5 +583,6 @@ IronClaw intentionally differs from OpenClaw in these ways:
 7. **Tinfoil private inference**: IronClaw-only provider for private/encrypted inference
 8. **GitHub WASM tool**: Native GitHub integration as WASM tool
 9. **Prompt-based skills**: Different approach than OpenClaw capability bundles (trust gating, attenuation)
+10. **Science tools**: Built-in scientific computing tools (literature search, statistics, experiment tracking, reports) for agentic scientist workflows
 
 These are intentional architectural choices, not gaps to be filled.

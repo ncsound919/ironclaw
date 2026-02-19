@@ -16,9 +16,10 @@ use crate::skills::catalog::SkillCatalog;
 use crate::skills::registry::SkillRegistry;
 use crate::tools::builder::{BuildSoftwareTool, BuilderConfig, LlmSoftwareBuilder};
 use crate::tools::builtin::{
-    ApplyPatchTool, CancelJobTool, CreateJobTool, EchoTool, HttpTool, JobEventsTool, JobPromptTool,
-    JobStatusTool, JsonTool, ListDirTool, ListJobsTool, MemoryReadTool, MemorySearchTool,
-    MemoryTreeTool, MemoryWriteTool, PromptQueue, ReadFileTool, ShellTool, SkillInstallTool,
+    ApplyPatchTool, CancelJobTool, CreateJobTool, EchoTool, ExperimentTrackerTool, HttpTool,
+    JobEventsTool, JobPromptTool, JobStatusTool, JsonTool, ListDirTool, ListJobsTool,
+    MemoryReadTool, MemorySearchTool, MemoryTreeTool, MemoryWriteTool, PromptQueue, ReadFileTool,
+    ScienceComputeTool, ScienceReportTool, ScienceSearchTool, ShellTool, SkillInstallTool,
     SkillListTool, SkillRemoveTool, SkillSearchTool, TimeTool, ToolActivateTool, ToolAuthTool,
     ToolInstallTool, ToolListTool, ToolRemoveTool, ToolSearchTool, WriteFileTool,
 };
@@ -66,6 +67,10 @@ const PROTECTED_TOOL_NAMES: &[&str] = &[
     "skill_search",
     "skill_install",
     "skill_remove",
+    "science_search",
+    "science_compute",
+    "experiment_tracker",
+    "science_report",
 ];
 
 /// Registry of available tools.
@@ -177,6 +182,8 @@ impl ToolRegistry {
         self.register_sync(Arc::new(TimeTool));
         self.register_sync(Arc::new(JsonTool));
         self.register_sync(Arc::new(HttpTool::new()));
+        self.register_sync(Arc::new(ScienceSearchTool::new()));
+        self.register_sync(Arc::new(ScienceComputeTool));
 
         tracing::info!("Registered {} built-in tools", self.count());
     }
@@ -240,6 +247,19 @@ impl ToolRegistry {
         self.register_sync(Arc::new(MemoryTreeTool::new(workspace)));
 
         tracing::info!("Registered 4 memory tools");
+    }
+
+    /// Register science workspace tools (experiment tracker and report generator).
+    ///
+    /// These tools require a workspace for persistence. Call this after
+    /// `register_builtin_tools()` if you have a workspace available.
+    /// Note: `science_search` and `science_compute` are registered by
+    /// `register_builtin_tools()` since they don't need a workspace.
+    pub fn register_science_tools(&self, workspace: Arc<Workspace>) {
+        self.register_sync(Arc::new(ExperimentTrackerTool::new(Arc::clone(&workspace))));
+        self.register_sync(Arc::new(ScienceReportTool::new(workspace)));
+
+        tracing::info!("Registered 2 science workspace tools");
     }
 
     /// Register job management tools.

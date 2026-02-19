@@ -447,6 +447,7 @@ impl AppBuilder {
             }
             let ws = Arc::new(ws);
             tools.register_memory_tools(Arc::clone(&ws));
+            tools.register_science_tools(Arc::clone(&ws));
             Some(ws)
         } else {
             None
