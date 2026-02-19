@@ -686,7 +686,7 @@ impl ExperimentTrackerTool {
         // 1. Prefer replacing a known placeholder line if present.
         // 2. Otherwise, insert immediately after the "## Observations" header.
         // 3. If the header cannot be found, fall back to appending at the end.
-        let placeholder = "- _No observations logged yet._";
+        let placeholder = "_No observations recorded yet._";
         let mut updated = if existing.contains(placeholder) {
             // Replace the placeholder with the new entry (trim leading newline).
             let trimmed_entry = entry.trim_start_matches('\n');
