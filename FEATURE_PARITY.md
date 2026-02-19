@@ -391,6 +391,7 @@ This document tracks feature parity between IronClaw (Rust implementation) and O
 | Config editing | ✅ | ❌ | P3 | |
 | Debug/logs viewer | ✅ | ✅ | - | Real-time log streaming with level/target filters |
 | WebChat interface | ✅ | ✅ | - | Web gateway chat with SSE/WebSocket |
+| Monaco IDE (Code tab) | ❌ | ✅ | - | Math, scientific, and logic language support with custom themes and editor controls |
 | Canvas system (A2UI) | ✅ | ❌ | P3 | Agent-driven UI, improved asset resolution |
 | Control UI i18n | ✅ | ❌ | P3 | English, Chinese, Portuguese |
 | WebChat theme sync | ✅ | ❌ | P3 | Sync with system dark/light mode |

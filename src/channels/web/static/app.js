@@ -815,6 +815,7 @@ function switchTab(tab) {
   if (tab === 'routines') loadRoutines();
   if (tab === 'logs') applyLogFilters();
   if (tab === 'extensions') loadExtensions();
+  if (tab === 'code') initMonaco();
 }
 
 // --- Memory (filesystem tree) ---
@@ -2093,6 +2094,291 @@ function installExtension() {
   });
 }
 
+// --- Code Tab (Monaco IDE) ---
+
+let monacoEditor = null;
+let monacoReady = false;
+
+// Custom language definitions for math, logic, and scientific notations
+const customLanguages = {
+  math: {
+    id: 'math',
+    label: 'Math Expression',
+    keywords: [
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
+      'sinh', 'cosh', 'tanh',
+      'log', 'ln', 'exp', 'sqrt', 'cbrt', 'abs', 'ceil', 'floor', 'round',
+      'pow', 'mod', 'gcd', 'lcm', 'factorial',
+      'pi', 'e', 'inf', 'nan', 'tau', 'phi',
+      'sum', 'prod', 'integral', 'derivative', 'limit',
+      'matrix', 'det', 'transpose', 'inverse', 'eigen',
+      'min', 'max', 'mean', 'median', 'variance', 'stddev',
+    ],
+    operators: ['+', '-', '*', '/', '^', '=', '!=', '<', '>', '<=', '>=', '!', '%', '|', '&'],
+    symbols: /[=><!~?:&|+\-*/^%]+/,
+    tokenizer: {
+      root: [
+        [/[a-zA-Z_]\w*/, { cases: { '@keywords': 'keyword', '@default': 'variable' } }],
+        [/\d+(\.\d+)?([eE][+-]?\d+)?/, 'number'],
+        [/[{}()[\]]/, 'delimiter.bracket'],
+        [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
+        [/#.*$/, 'comment'],
+        [/"([^"\\]|\\.)*"/, 'string'],
+      ],
+    },
+  },
+  logic: {
+    id: 'logic',
+    label: 'Propositional Logic',
+    keywords: [
+      'true', 'false', 'TRUE', 'FALSE', 'T', 'F',
+      'AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR', 'IMPLIES', 'IFF',
+      'FORALL', 'EXISTS', 'forall', 'exists',
+      'if', 'then', 'else', 'iff',
+      'let', 'in', 'where',
+      'prove', 'assume', 'therefore', 'contradiction',
+      'axiom', 'theorem', 'lemma', 'corollary', 'proposition',
+      'QED',
+    ],
+    operators: ['∧', '∨', '¬', '→', '↔', '⊕', '∀', '∃', '⊢', '⊨', '≡', '&&', '||', '!', '->', '<->'],
+    symbols: /[=><!~?:&|+\-*/^%∧∨¬→↔⊕∀∃⊢⊨≡]+/,
+    tokenizer: {
+      root: [
+        [/[a-zA-Z_]\w*/, { cases: { '@keywords': 'keyword', '@default': 'variable' } }],
+        [/[∧∨¬→↔⊕∀∃⊢⊨≡]/, 'operator'],
+        [/\d+/, 'number'],
+        [/[{}()[\]]/, 'delimiter.bracket'],
+        [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
+        [/\/\/.*$/, 'comment'],
+        [/--.*$/, 'comment'],
+        [/"([^"\\]|\\.)*"/, 'string'],
+      ],
+    },
+  },
+};
+
+function initMonaco() {
+  if (monacoReady) return;
+  if (typeof require === 'undefined' || !require.config) {
+    monacoReady = false;
+    console.error('Monaco editor could not be initialized: AMD loader "require" is unavailable. The Code tab may not function correctly.');
+    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+      window.alert('The code editor failed to load (for example, due to a network error or an ad blocker). The Code tab may not function correctly.');
+    }
+    return;
+  }
+
+  require.config({
+    paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' },
+  });
+
+  require(['vs/editor/editor.main'], function () {
+    monacoReady = true;
+
+    // Register custom languages
+    for (const [langId, langDef] of Object.entries(customLanguages)) {
+      monaco.languages.register({ id: langId });
+      monaco.languages.setMonarchTokensProvider(langId, {
+        keywords: langDef.keywords,
+        operators: langDef.operators,
+        symbols: langDef.symbols,
+        tokenizer: langDef.tokenizer,
+      });
+
+      // Add completions for custom languages
+      monaco.languages.registerCompletionItemProvider(langId, {
+        provideCompletionItems: function (model, position) {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
+          return {
+            suggestions: langDef.keywords.map(function (kw) {
+              return {
+                label: kw,
+                kind: monaco.languages.CompletionItemKind.Keyword,
+                insertText: kw,
+                range: range,
+              };
+            }),
+          };
+        },
+      });
+    }
+
+    // Define IronClaw dark theme
+    monaco.editor.defineTheme('ironclaw-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '58a6ff', fontStyle: 'bold' },
+        { token: 'variable', foreground: 'e6edf3' },
+        { token: 'number', foreground: '79c0ff' },
+        { token: 'operator', foreground: 'd29922' },
+        { token: 'comment', foreground: '8b949e', fontStyle: 'italic' },
+        { token: 'string', foreground: '3fb950' },
+        { token: 'delimiter.bracket', foreground: 'e6edf3' },
+      ],
+      colors: {
+        'editor.background': '#0d1117',
+        'editor.foreground': '#e6edf3',
+        'editorLineNumber.foreground': '#8b949e',
+        'editorCursor.foreground': '#58a6ff',
+        'editor.selectionBackground': '#264f78',
+        'editor.lineHighlightBackground': '#161b22',
+        'editorWidget.background': '#161b22',
+        'editorWidget.border': '#30363d',
+        'input.background': '#0d1117',
+        'input.border': '#30363d',
+        'dropdown.background': '#161b22',
+        'dropdown.border': '#30363d',
+      },
+    });
+
+    createMonacoEditor();
+  });
+}
+
+function createMonacoEditor() {
+  if (!monacoReady) return;
+  const container = document.getElementById('monaco-editor-container');
+  if (!container || monacoEditor) return;
+
+  const langSelect = document.getElementById('code-language');
+  const lang = langSelect ? langSelect.value : 'math';
+
+  monacoEditor = monaco.editor.create(container, {
+    value: getDefaultContent(lang),
+    language: lang,
+    theme: 'ironclaw-dark',
+    fontSize: 14,
+    minimap: { enabled: false },
+    wordWrap: 'on',
+    lineNumbers: 'on',
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    renderWhitespace: 'selection',
+    tabSize: 2,
+    bracketPairColorization: { enabled: true },
+    suggestOnTriggerCharacters: true,
+    quickSuggestions: true,
+    parameterHints: { enabled: true },
+    folding: true,
+    foldingStrategy: 'indentation',
+    padding: { top: 8 },
+  });
+
+  // Track cursor position
+  monacoEditor.onDidChangeCursorPosition(function (e) {
+    const pos = e.position;
+    const el = document.getElementById('code-cursor-pos');
+    if (el) el.textContent = 'Ln ' + pos.lineNumber + ', Col ' + pos.column;
+  });
+}
+
+function getDefaultContent(lang) {
+  switch (lang) {
+    case 'math':
+      return '# Math Expression Editor\n# Supports arithmetic, algebra, calculus notation\n\n# Basic arithmetic\n2 + 3 * (4 - 1)\n\n# Functions\nsin(pi / 4)\nsqrt(2)\nlog(e)\n\n# Summation\nsum(i, 1, 100, i^2)\n\n# Calculus\nderivative(x^2 + 3*x, x)\nintegral(sin(x), x, 0, pi)\n';
+    case 'latex':
+      return '% LaTeX Document\n\\documentclass{article}\n\\usepackage{amsmath}\n\n\\begin{document}\n\n\\section{Equations}\n\n% Quadratic formula\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\n% Integral\n$$\\int_0^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$\n\n% Matrix\n$$A = \\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}$$\n\n\\end{document}\n';
+    case 'logic':
+      return '// Propositional Logic\n// Use logical operators: AND (∧), OR (∨), NOT (¬), IMPLIES (→), IFF (↔)\n\n// De Morgan\'s Laws\nNOT (A AND B) IFF (NOT A OR NOT B)\nNOT (A OR B) IFF (NOT A AND NOT B)\n\n// Modus Ponens\nassume P\nassume P IMPLIES Q\ntherefore Q\n\n// Universal quantification\nFORALL x: P(x) IMPLIES Q(x)\nEXISTS x: P(x) AND Q(x)\n';
+    case 'prolog':
+      return '% Prolog - Logic Programming\n\n% Facts\nparent(tom, bob).\nparent(tom, liz).\nparent(bob, ann).\nparent(bob, pat).\n\n% Rules\ngrandparent(X, Z) :- parent(X, Y), parent(Y, Z).\nsibling(X, Y) :- parent(Z, X), parent(Z, Y), X \\= Y.\n\n% Queries\n% ?- grandparent(tom, ann).\n% ?- sibling(bob, liz).\n';
+    case 'python':
+      return '# Scientific Python\nimport numpy as np\nfrom scipy import integrate\n\n# Linear algebra\nA = np.array([[1, 2], [3, 4]])\neigenvalues = np.linalg.eigvals(A)\nprint(f"Eigenvalues: {eigenvalues}")\n\n# Numerical integration\nresult, error = integrate.quad(lambda x: np.sin(x), 0, np.pi)\nprint(f"Integral of sin(x) from 0 to pi = {result}")\n\n# Statistics\ndata = np.random.normal(0, 1, 1000)\nprint(f"Mean: {np.mean(data):.4f}")\nprint(f"Std:  {np.std(data):.4f}")\n';
+    case 'r':
+      return '# R Statistical Computing\n\n# Linear regression\nx <- c(1, 2, 3, 4, 5)\ny <- c(2.1, 3.9, 6.2, 7.8, 10.1)\nmodel <- lm(y ~ x)\nsummary(model)\n\n# Matrix operations\nA <- matrix(c(1, 2, 3, 4), nrow=2)\neigen(A)\n\n# Statistical test\nt.test(rnorm(30, mean=5), mu=4.5)\n';
+    default:
+      return '';
+  }
+}
+
+// Language selector change
+document.getElementById('code-language').addEventListener('change', function () {
+  if (!monacoEditor) {
+    window.alert('The code editor is still loading. Please try again in a moment.');
+document.addEventListener('DOMContentLoaded', function () {
+  const codeLanguageSelect = document.getElementById('code-language');
+  if (!codeLanguageSelect) {
+    return;
+  }
+
+  codeLanguageSelect.addEventListener('change', function () {
+    const lang = this.value;
+    const label = this.options[this.selectedIndex].text;
+    document.getElementById('code-lang-label').textContent = label;
+
+    if (monacoEditor) {
+      const model = monacoEditor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, lang);
+        // Only set default content if editor is empty or still has default content
+        const current = monacoEditor.getValue();
+        if (!current.trim()) {
+          monacoEditor.setValue(getDefaultContent(lang));
+        }
+      }
+    }
+  });
+});
+
+function toggleCodeSettings() {
+  const panel = document.getElementById('code-settings-panel');
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function applyCodeSetting() {
+  if (!monacoEditor) return;
+  monacoEditor.updateOptions({
+    fontSize: parseInt(document.getElementById('code-font-size').value) || 14,
+    minimap: { enabled: document.getElementById('code-minimap').checked },
+    wordWrap: document.getElementById('code-wordwrap').checked ? 'on' : 'off',
+    lineNumbers: document.getElementById('code-linenumbers').checked ? 'on' : 'off',
+  });
+  const theme = document.getElementById('code-theme').value;
+  monaco.editor.setTheme(theme);
+}
+
+function sendCodeToChat() {
+  if (!monacoEditor) return;
+  const content = monacoEditor.getValue().trim();
+  if (!content) {
+    showToast('Editor is empty', 'info');
+    return;
+  }
+  const langSelect = document.getElementById('code-language');
+  const lang = langSelect.value;
+  const label = langSelect.options[langSelect.selectedIndex].text;
+
+  // Switch to chat tab and send as a code block
+  switchTab('chat');
+  const input = document.getElementById('chat-input');
+  input.value = 'Here is my ' + label + ' code:\n\n```' + lang + '\n' + content + '\n```';
+  input.focus();
+}
+
+function copyEditorContent() {
+  if (!monacoEditor) return;
+  const content = monacoEditor.getValue();
+  navigator.clipboard.writeText(content).then(function () {
+    showToast('Copied to clipboard', 'info');
+  }).catch(function (err) {
+    console.error('Failed to copy to clipboard:', err);
+    showToast('Failed to copy to clipboard. Please check your browser permissions or HTTPS settings.', 'error');
+  });
+}
+
+function clearEditor() {
+  if (!monacoEditor) return;
+  monacoEditor.setValue('');
+  monacoEditor.focus();
+}
+
 // --- Keyboard shortcuts ---
 
 document.addEventListener('keydown', (e) => {
@@ -2100,10 +2386,10 @@ document.addEventListener('keydown', (e) => {
   const tag = (e.target.tagName || '').toLowerCase();
   const inInput = tag === 'input' || tag === 'textarea';
 
-  // Mod+1-6: switch tabs
-  if (mod && e.key >= '1' && e.key <= '6') {
+  // Mod+1-7: switch tabs
+  if (mod && e.key >= '1' && e.key <= '7') {
     e.preventDefault();
-    const tabs = ['chat', 'memory', 'jobs', 'routines', 'logs', 'extensions'];
+    const tabs = ['chat', 'memory', 'jobs', 'routines', 'logs', 'extensions', 'code'];
     const idx = parseInt(e.key) - 1;
     if (tabs[idx]) switchTab(tabs[idx]);
     return;

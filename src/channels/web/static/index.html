@@ -10,6 +10,11 @@
     integrity="sha384-pN9zSKOnTZwXRtYZAu0PBPEgR2B7DOC1aeLxQ33oJ0oy5iN1we6gm57xldM2irDG"
     crossorigin="anonymous"
   ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"
+    integrity="sha384-1J1r5HqVq0pA0ZB2zJt7YQ+uFqS8z7cP8uXg3WYpQhZgq1z9G4jXh9b7p9Vn3mQK"
+    crossorigin="anonymous"
+  ></script>
 </head>
 <body>
   <!-- Auth Screen -->
@@ -39,6 +44,7 @@
       <button data-tab="logs">Logs</button>
       <button data-tab="routines">Routines</button>
       <button data-tab="extensions">Extensions</button>
+      <button data-tab="code">Code</button>
       <div class="spacer"></div>
       <div class="status" id="gateway-status-trigger">
         <div class="dot" id="sse-dot"></div>
@@ -203,6 +209,75 @@
             <tbody id="tools-tbody"></tbody>
           </table>
           <div class="empty-state" id="tools-empty" style="display:none">No tools registered</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Tab (Monaco IDE) -->
+    <div class="tab-panel" id="tab-code">
+      <div class="code-container">
+        <div class="code-toolbar">
+          <select id="code-language" title="Language">
+            <optgroup label="Mathematical">
+              <option value="math">Math Expression</option>
+              <option value="latex">LaTeX</option>
+            </optgroup>
+            <optgroup label="Scientific">
+              <option value="python">Python</option>
+              <option value="r">R</option>
+              <option value="julia">Julia</option>
+            </optgroup>
+            <optgroup label="Logic">
+              <option value="logic">Propositional Logic</option>
+              <option value="prolog">Prolog</option>
+              <option value="fstar">F*</option>
+            </optgroup>
+            <optgroup label="General">
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="rust">Rust</option>
+              <option value="json">JSON</option>
+              <option value="markdown">Markdown</option>
+              <option value="plaintext">Plain Text</option>
+            </optgroup>
+          </select>
+          <button id="code-run-btn" onclick="sendCodeToChat()" title="Send to Chat">&#9654; Send to Chat</button>
+          <button id="code-copy-btn" onclick="copyEditorContent()" title="Copy">Copy</button>
+          <button id="code-clear-btn" onclick="clearEditor()" title="Clear">Clear</button>
+          <div class="code-toolbar-spacer"></div>
+          <button id="code-settings-toggle" onclick="toggleCodeSettings()" title="Editor Settings">&#9881; Settings</button>
+        </div>
+        <div class="code-settings-panel" id="code-settings-panel" style="display:none">
+          <div class="code-setting">
+            <label for="code-theme">Theme</label>
+            <select id="code-theme" onchange="applyCodeSetting()">
+              <option value="ironclaw-dark">IronClaw Dark</option>
+              <option value="vs-dark">VS Dark</option>
+              <option value="hc-black">High Contrast</option>
+              <option value="vs">Light</option>
+            </select>
+          </div>
+          <div class="code-setting">
+            <label for="code-font-size">Font Size</label>
+            <input type="number" id="code-font-size" min="10" max="32" value="14" onchange="applyCodeSetting()">
+          </div>
+          <div class="code-setting">
+            <label for="code-minimap">Minimap</label>
+            <input type="checkbox" id="code-minimap" onchange="applyCodeSetting()">
+          </div>
+          <div class="code-setting">
+            <label for="code-wordwrap">Word Wrap</label>
+            <input type="checkbox" id="code-wordwrap" checked onchange="applyCodeSetting()">
+          </div>
+          <div class="code-setting">
+            <label for="code-linenumbers">Line Numbers</label>
+            <input type="checkbox" id="code-linenumbers" checked onchange="applyCodeSetting()">
+          </div>
+        </div>
+        <div id="monaco-editor-container"></div>
+        <div class="code-status-bar" id="code-status-bar">
+          <span id="code-cursor-pos">Ln 1, Col 1</span>
+          <span id="code-lang-label">Math Expression</span>
         </div>
       </div>
     </div>
