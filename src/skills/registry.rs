@@ -501,6 +501,14 @@ async fn load_and_validate_skill(
                 reason: result.failures.join("; "),
             });
         }
+        // Log warnings for missing optional requirements
+        for warning in &result.warnings {
+            tracing::warn!(
+                skill = %manifest.name,
+                warning = %warning,
+                "Optional requirement not satisfied"
+            );
+        }
     }
 
     // Check token budget (reject if prompt is > 2x declared budget)

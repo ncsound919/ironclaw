@@ -179,6 +179,18 @@ pub struct GatingRequirements {
     /// Required config file paths that must exist.
     #[serde(default)]
     pub config: Vec<String>,
+    /// Required Python packages that must be installed (checked via pip list).
+    #[serde(default)]
+    pub python_packages: Vec<String>,
+    /// Optional binaries (skill works better if available, but not required).
+    #[serde(default)]
+    pub optional_bins: Vec<String>,
+    /// Optional environment variables (skill works better if set, but not required).
+    #[serde(default)]
+    pub optional_env: Vec<String>,
+    /// Optional config file paths (skill works better if exist, but not required).
+    #[serde(default)]
+    pub optional_config: Vec<String>,
 }
 
 /// A fully loaded skill ready for activation.
@@ -427,6 +439,30 @@ metadata:
         assert_eq!(openclaw.requires.bins, vec!["vale"]);
         assert_eq!(openclaw.requires.env, vec!["VALE_CONFIG"]);
         assert_eq!(openclaw.requires.config, vec!["/etc/vale.ini"]);
+    }
+
+    #[test]
+    fn test_parse_openclaw_metadata_with_python_packages() {
+        let yaml = r#"
+name: science-skill
+metadata:
+  openclaw:
+    requires:
+      bins: ["python3"]
+      python_packages: ["scipy", "numpy", "statsmodels"]
+      optional_bins: ["matlab"]
+      optional_env: ["CUDA_VISIBLE_DEVICES"]
+"#;
+        let manifest: SkillManifest = serde_yml::from_str(yaml).expect("parse failed");
+        let meta = manifest.metadata.unwrap();
+        let openclaw = meta.openclaw.unwrap();
+        assert_eq!(openclaw.requires.bins, vec!["python3"]);
+        assert_eq!(
+            openclaw.requires.python_packages,
+            vec!["scipy", "numpy", "statsmodels"]
+        );
+        assert_eq!(openclaw.requires.optional_bins, vec!["matlab"]);
+        assert_eq!(openclaw.requires.optional_env, vec!["CUDA_VISIBLE_DEVICES"]);
     }
 
     #[test]
