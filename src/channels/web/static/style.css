@@ -2400,6 +2400,122 @@ mark {
   border-color: var(--accent);
 }
 
+/* --- Code Tab (Monaco IDE) --- */
+
+.code-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.code-toolbar select {
+  padding: 5px 8px;
+  background: var(--bg-tertiary);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.code-toolbar button {
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.code-toolbar button:hover {
+  background: var(--border);
+}
+
+#code-run-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+#code-run-btn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.code-toolbar-spacer {
+  flex: 1;
+}
+
+.code-settings-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.code-setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-setting label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.code-setting select,
+.code-setting input[type="number"] {
+  padding: 3px 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  width: auto;
+}
+
+.code-setting input[type="number"] {
+  width: 60px;
+}
+
+.code-setting input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+#monaco-editor-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.code-status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 /* --- Mobile responsive --- */
 
 @media (max-width: 768px) {

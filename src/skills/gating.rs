@@ -83,7 +83,10 @@ pub fn check_requirements_sync(requirements: &GatingRequirements) -> GatingResul
     // Check required Python packages
     for package in &requirements.python_packages {
         if !python_package_exists(package) {
-            failures.push(format!("required Python package not installed: {}", package));
+            failures.push(format!(
+                "required Python package not installed: {}",
+                package
+            ));
         }
     }
 
